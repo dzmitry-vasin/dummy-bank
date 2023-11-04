@@ -19,6 +19,7 @@ public class AccountDataService {
     private static final double BALANCE_VALUE_RIGHT_BOUND = 99999;
 
     private final Random random = new Random();
+
     public List<Account> accounts(Client client) {
         return Stream.generate(
                         () -> account(client)

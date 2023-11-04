@@ -158,7 +158,7 @@ public class AccountControllerTest {
     private ResultActions getAccounts(String clientExternalId) {
         return mvc.perform(
                 get(
-                        "/api/clients/{id}/accounts",
+                        "/clients/{id}/accounts",
                         clientExternalId
                 )
         );

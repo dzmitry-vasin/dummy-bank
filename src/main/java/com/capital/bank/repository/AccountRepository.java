@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface AccountRepository extends CrudRepository<Account, UUID> {
     List<Account> findAllByClientExternalId(String externalID);
+
+    Account findByExternalId(Long externalId);
 }

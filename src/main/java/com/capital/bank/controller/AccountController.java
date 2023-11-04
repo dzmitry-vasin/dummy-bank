@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/clients/{id}")
+@RequestMapping("/clients/{id}")
 @RequiredArgsConstructor
 public class AccountController {
-  private final AccountService accountService;
+    private final AccountService accountService;
 
-  @GetMapping("/accounts")
-  public List<Account> findAccounts(@PathVariable("id") String clientExternalId) {
-    return accountService.findAccounts(clientExternalId);
-  }
+    @GetMapping("/accounts")
+    public List<Account> findAccounts(@PathVariable("id") String clientExternalId) {
+        return accountService.findAccounts(clientExternalId);
+    }
 }
