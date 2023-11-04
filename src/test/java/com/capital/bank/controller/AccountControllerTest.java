@@ -46,34 +46,13 @@ public class AccountControllerTest {
     @SneakyThrows
     public void givenAnyClient_whenGetAnyAccounts_thenValidResponse() {
         String anyClientExternalId = "any";
+        List<Account> anyAccounts = prepareAccounts(anyClientExternalId);
 
-        Client anyClient = Client.builder()
-                .externalId(anyClientExternalId)
-                .build();
-
-        Account account1 = Account.builder()
-                .client(anyClient)
-                .externalId(2147483648L)
-                .balance(BigDecimal.valueOf(10000))
-                .build();
-
-        Account account2 = Account.builder()
-                .client(anyClient)
-                .externalId(9999999999L)
-                .balance(BigDecimal.valueOf(99999))
-                .build();
-
-        List<Account> anyAccounts = List.of(account1, account2);
-
-        clientRepository.save(anyClient);
-        accountRepository.saveAll(anyAccounts);
-
-        getAccountsAndVerify(
-                anyClientExternalId,
+        verify(
+                getAccountsRequest(anyClientExternalId),
                 status().isOk(),
                 content().json(
-                        objectMapper.writeValueAsString(anyAccounts),
-                        false
+                        objectMapper.writeValueAsString(anyAccounts)
                 )
         );
     }
@@ -81,36 +60,16 @@ public class AccountControllerTest {
     @Test
     @SneakyThrows
     public void givenNoAnyClient_whenGetAnyAccounts_thenEmptyResponse() {
-        Client noAnyClient = Client.builder()
-                .externalId("noAny")
-                .build();
-
-        Account account1 = Account.builder()
-                .client(noAnyClient)
-                .externalId(2147483648L)
-                .balance(BigDecimal.valueOf(10000))
-                .build();
-
-        Account account2 = Account.builder()
-                .client(noAnyClient)
-                .externalId(9999999999L)
-                .balance(BigDecimal.valueOf(99999))
-                .build();
-
-        List<Account> noAnyAccounts = List.of(account1, account2);
-
-        clientRepository.save(noAnyClient);
-        accountRepository.saveAll(noAnyAccounts);
+        prepareAccounts("noAny");
 
         String anyClientExternalId = "any";
         List<Account> anyAccounts = List.of();
 
-        getAccountsAndVerify(
-                anyClientExternalId,
+        verify(
+                getAccountsRequest(anyClientExternalId),
                 status().isOk(),
                 content().json(
-                        objectMapper.writeValueAsString(anyAccounts),
-                        false
+                        objectMapper.writeValueAsString(anyAccounts)
                 )
         );
     }
@@ -120,8 +79,8 @@ public class AccountControllerTest {
     public void givenGeneratedClients_whenGetGeneratedAccounts_thenValidResponse(String clientExternalId) {
         loadDataService.execute();
 
-        getAccountsAndVerify(
-                clientExternalId,
+        verify(
+                getAccountsRequest(clientExternalId),
                 status().isOk(),
                 jsonPath("$", hasSize(3)),
                 jsonPath(
@@ -154,8 +113,33 @@ public class AccountControllerTest {
         );
     }
 
+    private List<Account> prepareAccounts(String clientExternalId) {
+        Client anyClient = Client.builder()
+                .externalId(clientExternalId)
+                .build();
+
+        Account account1 = Account.builder()
+                .client(anyClient)
+                .externalId(2147483648L)
+                .balance(BigDecimal.valueOf(10000))
+                .build();
+
+        Account account2 = Account.builder()
+                .client(anyClient)
+                .externalId(9999999999L)
+                .balance(BigDecimal.valueOf(99999))
+                .build();
+
+        List<Account> anyAccounts = List.of(account1, account2);
+
+        clientRepository.save(anyClient);
+        accountRepository.saveAll(anyAccounts);
+
+        return anyAccounts;
+    }
+
     @SneakyThrows
-    private ResultActions getAccounts(String clientExternalId) {
+    private ResultActions getAccountsRequest(String clientExternalId) {
         return mvc.perform(
                 get(
                         "/clients/{id}/accounts",
@@ -165,8 +149,7 @@ public class AccountControllerTest {
     }
 
     @SneakyThrows
-    private void getAccountsAndVerify(String clientExternalId, ResultMatcher... matchers) {
-        ResultActions resultActions = getAccounts(clientExternalId);
+    private void verify(ResultActions resultActions, ResultMatcher... matchers) {
         Arrays.stream(matchers)
                 .forEach(
                         ThrowingConsumer.of(
