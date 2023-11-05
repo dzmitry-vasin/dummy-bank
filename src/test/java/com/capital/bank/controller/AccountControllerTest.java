@@ -1,10 +1,9 @@
 package com.capital.bank.controller;
 
+import com.capital.bank.Controllers;
 import com.capital.bank.IntegrationTest;
+import com.capital.bank.TestData;
 import com.capital.bank.model.Account;
-import com.capital.bank.model.Client;
-import com.capital.bank.repository.AccountRepository;
-import com.capital.bank.repository.ClientRepository;
 import com.capital.bank.service.data.LoadDataService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -12,21 +11,15 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.ResultMatcher;
-import org.springframework.util.function.ThrowingConsumer;
 
-import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 
+import static com.capital.bank.Controllers.verify;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,11 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @IntegrationTest
 @AllArgsConstructor
 public class AccountControllerTest {
-    private final MockMvc mvc;
+    private final Controllers controllers;
     private final ObjectMapper objectMapper;
 
-    private final ClientRepository clientRepository;
-    private final AccountRepository accountRepository;
+    private final TestData testData;
 
     private final LoadDataService loadDataService;
 
@@ -46,10 +38,10 @@ public class AccountControllerTest {
     @SneakyThrows
     public void givenAnyClient_whenGetAnyAccounts_thenValidResponse() {
         String anyClientExternalId = "any";
-        List<Account> anyAccounts = prepareAccounts(anyClientExternalId);
+        List<Account> anyAccounts = testData.prepareAccounts(anyClientExternalId);
 
         verify(
-                getAccountsRequest(anyClientExternalId),
+                controllers.getAccountsRequest(anyClientExternalId),
                 status().isOk(),
                 content().json(
                         objectMapper.writeValueAsString(anyAccounts)
@@ -60,13 +52,13 @@ public class AccountControllerTest {
     @Test
     @SneakyThrows
     public void givenNoAnyClient_whenGetAnyAccounts_thenEmptyResponse() {
-        prepareAccounts("noAny");
+        testData.prepareAccounts("noAny");
 
         String anyClientExternalId = "any";
         List<Account> anyAccounts = List.of();
 
         verify(
-                getAccountsRequest(anyClientExternalId),
+                controllers.getAccountsRequest(anyClientExternalId),
                 status().isOk(),
                 content().json(
                         objectMapper.writeValueAsString(anyAccounts)
@@ -80,7 +72,7 @@ public class AccountControllerTest {
         loadDataService.execute();
 
         verify(
-                getAccountsRequest(clientExternalId),
+                controllers.getAccountsRequest(clientExternalId),
                 status().isOk(),
                 jsonPath("$", hasSize(3)),
                 jsonPath(
@@ -111,50 +103,5 @@ public class AccountControllerTest {
                         everyItem(is(clientExternalId))
                 )
         );
-    }
-
-    private List<Account> prepareAccounts(String clientExternalId) {
-        Client anyClient = Client.builder()
-                .externalId(clientExternalId)
-                .build();
-
-        Account account1 = Account.builder()
-                .client(anyClient)
-                .externalId(2147483648L)
-                .balance(BigDecimal.valueOf(10000))
-                .build();
-
-        Account account2 = Account.builder()
-                .client(anyClient)
-                .externalId(9999999999L)
-                .balance(BigDecimal.valueOf(99999))
-                .build();
-
-        List<Account> anyAccounts = List.of(account1, account2);
-
-        clientRepository.save(anyClient);
-        accountRepository.saveAll(anyAccounts);
-
-        return anyAccounts;
-    }
-
-    @SneakyThrows
-    private ResultActions getAccountsRequest(String clientExternalId) {
-        return mvc.perform(
-                get(
-                        "/clients/{id}/accounts",
-                        clientExternalId
-                )
-        );
-    }
-
-    @SneakyThrows
-    private void verify(ResultActions resultActions, ResultMatcher... matchers) {
-        Arrays.stream(matchers)
-                .forEach(
-                        ThrowingConsumer.of(
-                                resultActions::andExpect
-                        )
-                );
     }
 }
